@@ -2,29 +2,45 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"time"
 )
 
-const TIMEOUT_SECONDS time.Duration = 10 * time.Second
+const CONN_TIMEOUT time.Duration = 10 * time.Second
+const READ_TIMEOUT time.Duration = 100 * time.Millisecond
 
 func readConnectionMessage(conn net.Conn) (string, error) {
-	buf := make([]byte, 2048)
-	read, _ := conn.Read(buf)
-	fmt.Println(string(read))
+	buffer := make([]byte, 2048)
+	message := ""
+	for {
+		n, err := conn.Read(buffer)
+		if err != nil {
+			// Timeout
+			if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
+				break
+			}
+			// EOF
+			if err == io.EOF {
+				break
+			}
+		}
+		data := buffer[:n]
+		message += string(data)
+	}
 
-	return string(read), nil
+	return message, nil
 }
 
 func handleConnection(conn net.Conn) {
 	defer conn.Close()
 
-	input, _ := readConnectionMessage(conn)
-	fmt.Println(input)
+	message, _ := readConnectionMessage(conn)
+	request := Request{message: message}
 
-	responseString := "HTTP/1.1 200 OK\r\n\r\n"
-	conn.Write([]byte(responseString))
+	response, _ := request.Handle(message)
+	conn.Write([]byte(response))
 }
 
 func main() {
@@ -41,7 +57,9 @@ func main() {
 
 	for {
 		conn, err := l.Accept()
-		conn.SetDeadline(time.Now().Add(TIMEOUT_SECONDS))
+		conn.SetDeadline(time.Now().Add(CONN_TIMEOUT))
+		conn.SetReadDeadline(time.Now().Add(READ_TIMEOUT))
+
 		if err != nil {
 			if opErr, ok := err.(*net.OpError); ok && opErr.Timeout() {
 				fmt.Println("Timeout: ", err.Error())
