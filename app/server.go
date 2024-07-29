@@ -33,14 +33,25 @@ func readConnectionMessage(conn net.Conn) (string, error) {
 	return message, nil
 }
 
-func handleConnection(conn net.Conn) {
+func handleConnection(conn net.Conn, appConfig *AppConfig) {
 	defer conn.Close()
 
 	message, _ := readConnectionMessage(conn)
 	request := Request{message: message}
 
-	response, _ := request.Handle(message)
+	response, _ := request.Handle(appConfig)
 	conn.Write([]byte(response))
+}
+
+func initAppConfigs() *AppConfig {
+	router := Router{}
+
+	return &AppConfig{
+		endpoints: []Endpoint{
+			{path: "/", requestType: "GET", handler: router.home, contentType: "text/plain"},
+			{path: "/echo/{str}", requestType: "GET", handler: router.echo, contentType: "text/plain"},
+		},
+	}
 }
 
 func main() {
@@ -54,6 +65,7 @@ func main() {
 	}
 
 	defer l.Close()
+	appConfig := initAppConfigs()
 
 	for {
 		conn, err := l.Accept()
@@ -70,6 +82,6 @@ func main() {
 			os.Exit(1)
 		}
 
-		go handleConnection(conn)
+		go handleConnection(conn, appConfig)
 	}
 }
