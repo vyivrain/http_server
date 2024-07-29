@@ -1,6 +1,7 @@
 package main
 
 import (
+	"maps"
 	"regexp"
 	"strings"
 )
@@ -10,24 +11,21 @@ type AppConfig struct {
 }
 
 type Endpoint struct {
-	requestType string
-	path        string
-	handler     func(map[string]string) *Response
-	params      map[string]string
-	contentType string
+	headers map[string]string
+	handler func(map[string]string, map[string]string) *Response
 }
 
 func (e *Endpoint) MatchesPath(path string, requestType string) bool {
-	if requestType != e.requestType {
+	if requestType != e.headers["requestType"] {
 		return false
 	}
 
-	if path == e.path {
+	if path == e.headers["path"] {
 		return true
 	}
 
 	requestedPathSplit := strings.Split(path, "/")
-	comparePathSplit := strings.Split(e.path, "/")
+	comparePathSplit := strings.Split(e.headers["path"], "/")
 	if len(requestedPathSplit) != len(comparePathSplit) {
 		return false
 	}
@@ -56,14 +54,10 @@ func (e *Endpoint) matchParameterizedPath(requestedSplittedPathValue string, com
 	}
 }
 
-func (e *Endpoint) FillEndpointData(requestPath string) {
-	e.fillParamsData(requestPath)
-}
-
-func (e *Endpoint) fillParamsData(requestPath string) {
+func (e *Endpoint) getParams(requestPath string) map[string]string {
 	params := make(map[string]string)
 	requestedPathSplit := strings.Split(requestPath, "/")
-	comparePathSplit := strings.Split(e.path, "/")
+	comparePathSplit := strings.Split(e.headers["path"], "/")
 	zip := createZip(requestedPathSplit, comparePathSplit)
 	re := regexp.MustCompile(`[{}]`)
 
@@ -82,12 +76,16 @@ func (e *Endpoint) fillParamsData(requestPath string) {
 		}
 	}
 
-	e.params = params
+	return params
 }
 
-func (e *Endpoint) GenerateResponse(httpVersion string, contentType string) *Response {
-	response := e.handler(e.params)
-	response.httpVersion = httpVersion
-	response.contentType = contentType
+func (e *Endpoint) GenerateResponse(headers map[string]string) *Response {
+	mergedHeaders := make(map[string]string)
+	maps.Copy(mergedHeaders, e.headers)
+	maps.Copy(mergedHeaders, headers)
+	response := e.handler(mergedHeaders, e.getParams(mergedHeaders["path"]))
+	maps.Copy(mergedHeaders, response.headers)
+	response.headers = mergedHeaders
+
 	return response
 }

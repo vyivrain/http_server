@@ -48,8 +48,9 @@ func initAppConfigs() *AppConfig {
 
 	return &AppConfig{
 		endpoints: []Endpoint{
-			{path: "/", requestType: "GET", handler: router.home, contentType: "text/plain"},
-			{path: "/echo/{str}", requestType: "GET", handler: router.echo, contentType: "text/plain"},
+			{handler: router.home, headers: map[string]string{"requestType": "GET", "contentType": "text/plain", "path": "/"}},
+			{handler: router.userAgent, headers: map[string]string{"requestType": "GET", "contentType": "text/plain", "path": "/user-agent"}},
+			{handler: router.echo, headers: map[string]string{"requestType": "GET", "contentType": "text/plain", "path": "/echo/{str}"}},
 		},
 	}
 }
