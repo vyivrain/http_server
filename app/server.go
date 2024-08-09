@@ -1,36 +1,34 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
-	"io"
 	"net"
 	"os"
 	"time"
 )
 
-const CONN_TIMEOUT time.Duration = 10 * time.Second
-const READ_TIMEOUT time.Duration = 100 * time.Millisecond
+const CONN_TIMEOUT time.Duration = 30 * time.Second
+const CONN_CHUNK_SIZE int = 4092
+
+// const READ_TIMEOUT time.Duration = 200 * time.Millisecond
 
 func readConnectionMessage(conn net.Conn) (string, error) {
-	buffer := make([]byte, 2048)
-	message := ""
+	buffer := bytes.NewBuffer(nil)
 	for {
-		n, err := conn.Read(buffer)
+		chunk := make([]byte, CONN_CHUNK_SIZE)
+		read, err := conn.Read(chunk)
 		if err != nil {
-			// Timeout
-			if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
-				break
-			}
-			// EOF
-			if err == io.EOF {
-				break
-			}
+			return "", err
 		}
-		data := buffer[:n]
-		message += string(data)
+		buffer.Write(chunk[:read])
+
+		if read == 0 || read < CONN_CHUNK_SIZE {
+			break
+		}
 	}
 
-	return message, nil
+	return buffer.String(), nil
 }
 
 func handleConnection(conn net.Conn, appConfig *AppConfig) {
@@ -71,7 +69,7 @@ func main() {
 	for {
 		conn, err := l.Accept()
 		conn.SetDeadline(time.Now().Add(CONN_TIMEOUT))
-		conn.SetReadDeadline(time.Now().Add(READ_TIMEOUT))
+		// conn.SetReadDeadline(time.Now().Add(READ_TIMEOUT))
 
 		if err != nil {
 			if opErr, ok := err.(*net.OpError); ok && opErr.Timeout() {
