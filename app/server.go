@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"slices"
 	"time"
 )
 
@@ -42,15 +43,27 @@ func handleConnection(conn net.Conn, appConfig *AppConfig) {
 }
 
 func initAppConfigs() *AppConfig {
+	appConfig := AppConfig{}
 	router := Router{}
 
-	return &AppConfig{
-		endpoints: []Endpoint{
-			{handler: router.home, headers: map[string]string{"requestType": "GET", "contentType": "text/plain", "path": "/"}},
-			{handler: router.userAgent, headers: map[string]string{"requestType": "GET", "contentType": "text/plain", "path": "/user-agent"}},
-			{handler: router.echo, headers: map[string]string{"requestType": "GET", "contentType": "text/plain", "path": "/echo/{str}"}},
-		},
+	appConfig.endpoints = []Endpoint{
+		{handler: router.home, headers: map[string]string{"requestType": "GET", "contentType": "text/plain", "path": "/"}},
+		{handler: router.userAgent, headers: map[string]string{"requestType": "GET", "contentType": "text/plain", "path": "/user-agent"}},
+		{handler: router.echo, headers: map[string]string{"requestType": "GET", "contentType": "text/plain", "path": "/echo/{str}"}},
+		{handler: router.files, headers: map[string]string{"requestType": "GET", "contentType": "application/octet-stream", "path": "/files/{filename}"}},
 	}
+
+	args := os.Args[1:]
+	directoryParamIndex := slices.Index(args, "--directory")
+	if directoryParamIndex >= 0 {
+		directory := args[directoryParamIndex+1]
+		router.fileDirectory = directory
+
+	}
+
+	appConfig.router = router
+
+	return &appConfig
 }
 
 func main() {
@@ -69,7 +82,6 @@ func main() {
 	for {
 		conn, err := l.Accept()
 		conn.SetDeadline(time.Now().Add(CONN_TIMEOUT))
-		// conn.SetReadDeadline(time.Now().Add(READ_TIMEOUT))
 
 		if err != nil {
 			if opErr, ok := err.(*net.OpError); ok && opErr.Timeout() {

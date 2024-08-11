@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 )
 
@@ -47,9 +48,12 @@ func (r *Request) fillRequestData() {
 	r.headers["requestType"] = mainRequestInfo[0]
 	r.headers["path"] = mainRequestInfo[1]
 	r.headers["httpVersion"] = mainRequestInfo[2]
-	r.headers["host"] = strings.Replace(splittedMessage[1], "Host: ", "", -1)
-	r.headers["userAgent"] = strings.Replace(splittedMessage[2], "User-Agent: ", "", -1)
-	r.headers["contentType"] = "text/plain"
+	if hostIndex := r.matchRespectiveHeader(splittedMessage, "Host:"); hostIndex >= 0 {
+		r.headers["host"] = strings.Replace(splittedMessage[hostIndex], "Host: ", "", -1)
+	}
+	if userAgentIndex := r.matchRespectiveHeader(splittedMessage, "User-Agent:"); userAgentIndex >= 0 {
+		r.headers["userAgent"] = strings.Replace(splittedMessage[userAgentIndex], "User-Agent: ", "", -1)
+	}
 }
 
 func (r *Request) matchEndpoint(appConfig *AppConfig) (*Endpoint, error) {
@@ -60,4 +64,9 @@ func (r *Request) matchEndpoint(appConfig *AppConfig) (*Endpoint, error) {
 	}
 
 	return nil, errors.New("")
+}
+
+func (r *Request) matchRespectiveHeader(headerSlice []string, header string) int {
+	index := slices.IndexFunc(headerSlice, func(cmpHeader string) bool { return strings.Contains(cmpHeader, header) })
+	return index
 }
