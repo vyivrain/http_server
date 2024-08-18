@@ -51,6 +51,7 @@ func initAppConfigs() *AppConfig {
 		{handler: router.userAgent, headers: map[string]string{"requestType": "GET", "contentType": "text/plain", "path": "/user-agent"}},
 		{handler: router.echo, headers: map[string]string{"requestType": "GET", "contentType": "text/plain", "path": "/echo/{str}"}},
 		{handler: router.files, headers: map[string]string{"requestType": "GET", "contentType": "application/octet-stream", "path": "/files/{filename}"}},
+		{handler: router.postFile, headers: map[string]string{"requestType": "POST", "contentType": "application/octet-stream", "path": "/files/{filename}"}},
 	}
 
 	args := os.Args[1:]

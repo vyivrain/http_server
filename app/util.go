@@ -28,15 +28,16 @@ func createZip(slice1 interface{}, slice2 interface{}) func() (interface{}, inte
 	}
 }
 
-func readFile(filepath string) (string, error) {
-	if _, err := os.Stat(filepath); err != nil {
+func readFile(filePath string) (string, error) {
+	if _, err := os.Stat(filePath); err != nil {
 		return "", err
 	}
 
-	file, err := os.Open(filepath)
+	file, err := os.Open(filePath)
 	if err != nil {
 		return "", err
 	}
+	defer file.Close()
 
 	buffer := bytes.NewBuffer(nil)
 
@@ -55,4 +56,62 @@ func readFile(filepath string) (string, error) {
 	}
 
 	return buffer.String(), nil
+}
+
+func createFile(filePath string, data string) error {
+	f, err := os.Create(filePath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	if _, err2 := f.Write([]byte(data)); err2 != nil {
+		return err2
+	}
+
+	return nil
+}
+
+func writeToFile(filePath string, data string) error {
+	if _, err := os.Stat(filePath); err != nil {
+		return err
+	}
+
+	f, err := os.OpenFile(filePath, os.O_RDWR|os.O_WRONLY|os.O_APPEND, 0644)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	if _, err2 := f.Write([]byte(data)); err2 != nil {
+		return err2
+	}
+
+	return nil
+}
+
+func deleteEmptyElements(slice interface{}) interface{} {
+	sliceValue := reflect.ValueOf(slice)
+	sliceLen := sliceValue.Len()
+	newSlice := reflect.MakeSlice(sliceValue.Type(), 0, sliceValue.Len())
+	if sliceValue.Kind() != reflect.Slice {
+		panic("Input must be a slice")
+	}
+
+	for i := 0; i < sliceLen; i++ {
+		value := sliceValue.Index(i)
+		interfacedValue := value.Interface()
+		switch convertedValue := interfacedValue.(type) {
+		case string:
+			if convertedValue != "" {
+				newSlice = reflect.Append(newSlice, value)
+			}
+		default:
+			if convertedValue != nil {
+				newSlice = reflect.Append(newSlice, value)
+			}
+		}
+	}
+
+	return newSlice.Interface()
 }

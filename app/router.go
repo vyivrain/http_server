@@ -29,3 +29,24 @@ func (route *Router) files(headers map[string]string, params map[string]string) 
 
 	return &Response{statusCode: 200, message: fileData}
 }
+
+func (route *Router) postFile(headers map[string]string, params map[string]string) *Response {
+	filePath := route.fileDirectory + params["filename"]
+	_, err := readFile(filePath)
+
+	if err != nil {
+		if fileErr := createFile(filePath, params["body"]); fileErr != nil {
+			fmt.Println(fileErr)
+			return &Response{statusCode: 404}
+		}
+	} else {
+		if fileErr := writeToFile(filePath, params["body"]); fileErr != nil {
+			fmt.Println(fileErr)
+			return &Response{statusCode: 404}
+		}
+	}
+
+	fmt.Println(params)
+
+	return &Response{statusCode: 201}
+}

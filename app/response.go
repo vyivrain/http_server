@@ -34,6 +34,8 @@ func (resp *Response) getHeadMessage() string {
 		return "OK"
 	case 404:
 		return "Not Found"
+	case 201:
+		return "Created"
 	}
 
 	return ""
