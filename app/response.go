@@ -20,12 +20,17 @@ func (resp *Response) String() string {
 	}
 
 	htmlHeaders := fmt.Sprintf(
-		"Content-Type: %s\r\nContent-Length: %d\r\n\r\n",
+		"Content-Type: %s\r\nContent-Length: %d",
 		resp.headers["contentType"],
 		len(resp.message),
 	)
 
-	return htmlStatus + htmlHeaders + resp.message
+	additionalHeaders := ""
+	if val, ok := resp.headers["encoding"]; ok {
+		additionalHeaders += "Content-Encoding: " + val
+	}
+
+	return htmlStatus + htmlHeaders + additionalHeaders + "\r\n\r\n" + resp.message
 }
 
 func (resp *Response) getHeadMessage() string {

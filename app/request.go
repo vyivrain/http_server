@@ -7,14 +7,13 @@ import (
 	"strings"
 )
 
-const NOT_FOUND_MESSAGE string = "Not Found"
-
 type Request struct {
 	message          string
 	headers          map[string]string
 	params           map[string]string
 	body             string
 	unhandledRequest bool
+	compressionObj   compressionMethod
 }
 
 func (r *Request) String() string {
@@ -74,6 +73,14 @@ func (r *Request) fillRequestData() {
 		r.headers["contentLength"] = strings.Replace(splittedMessage[contentLengthIndex], "Content-Length: ", "", -1)
 	}
 
+	enncodingIndex := r.matchRespectiveHeader(splittedMessage, "Accept-Encoding:")
+	if enncodingIndex >= 0 {
+		encoding := strings.Replace(splittedMessage[enncodingIndex], "Accept-Encoding: ", "", -1)
+		if r.validEncoding(encoding) {
+			r.headers["encoding"] = encoding
+		}
+	}
+
 	if slices.Contains([]string{"POST", "PATCH", "PUT"}, r.headers["requestType"]) {
 		switch r.headers["contentType"] {
 		case "application/octet-stream", "text/html", "text/plain":
@@ -97,4 +104,9 @@ func (r *Request) matchEndpoint(appConfig *AppConfig) (*Endpoint, error) {
 func (r *Request) matchRespectiveHeader(headerSlice []string, header string) int {
 	index := slices.IndexFunc(headerSlice, func(cmpHeader string) bool { return strings.Contains(cmpHeader, header) })
 	return index
+}
+
+func (r *Request) validEncoding(encoding string) bool {
+	validEncodings := []string{"gzip"}
+	return slices.Contains(validEncodings, encoding)
 }
