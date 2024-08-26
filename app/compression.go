@@ -1,4 +1,4 @@
-package compression
+package main
 
 type compressionMethod interface {
 	dataContainsCompressionMethod(data []byte) bool

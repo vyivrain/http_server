@@ -13,6 +13,7 @@ type Request struct {
 	params           map[string]string
 	body             string
 	unhandledRequest bool
+	compression      compressionMethod
 }
 
 func (r *Request) String() string {
@@ -41,10 +42,19 @@ func (r *Request) Handle(appConfig *AppConfig) (string, error) {
 	}
 
 	if r.body != "" {
-		r.params["body"] = r.body
+		if r.compression != nil && r.compression.dataContainsCompressionMethod([]byte(r.body)) {
+			compressedBody, err2 := r.compression.decompress([]byte(r.body))
+			if err2 != nil {
+				panic("Can't compress request's body")
+			}
+
+			r.params["body"] = string(compressedBody)
+		} else {
+			r.params["body"] = r.body
+		}
 	}
 
-	return fmt.Sprintf("%v", endpoint.GenerateResponse(r.headers, r.params)), nil
+	return fmt.Sprintf("%v", endpoint.GenerateResponse(r.headers, r.params, r.compression)), nil
 }
 
 func (r *Request) fillRequestData() {
@@ -88,6 +98,8 @@ func (r *Request) fillRequestData() {
 			r.unhandledRequest = true
 		}
 	}
+
+	r.setEncoding()
 }
 
 func (r *Request) matchEndpoint(appConfig *AppConfig) (*Endpoint, error) {
@@ -108,4 +120,10 @@ func (r *Request) matchRespectiveHeader(headerSlice []string, header string) int
 func (r *Request) validEncoding(encoding string) bool {
 	validEncodings := []string{"gzip"}
 	return slices.Contains(validEncodings, encoding)
+}
+
+func (r *Request) setEncoding() {
+	if r.headers["encoding"] == "gzip" {
+		r.compression = &GzipCompression{}
+	}
 }

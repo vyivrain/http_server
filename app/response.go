@@ -3,9 +3,10 @@ package main
 import "fmt"
 
 type Response struct {
-	message    string
-	statusCode int
-	headers    map[string]string
+	message     string
+	statusCode  int
+	headers     map[string]string
+	compression compressionMethod
 }
 
 type ResponseError struct {
@@ -27,10 +28,21 @@ func (resp *Response) String() string {
 
 	additionalHeaders := ""
 	if val, ok := resp.headers["encoding"]; ok {
-		additionalHeaders += "Content-Encoding: " + val
+		additionalHeaders += "\r\nContent-Encoding: " + val
 	}
 
-	return htmlStatus + htmlHeaders + additionalHeaders + "\r\n\r\n" + resp.message
+	responseMessage := ""
+	if resp.compression != nil {
+		if compressedData, err := resp.compression.compress([]byte(resp.message)); err == nil {
+			responseMessage = string(compressedData)
+		} else {
+			panic("Can't compress response message")
+		}
+	} else {
+		responseMessage = resp.message
+	}
+
+	return htmlStatus + htmlHeaders + additionalHeaders + "\r\n\r\n" + responseMessage
 }
 
 func (resp *Response) getHeadMessage() string {

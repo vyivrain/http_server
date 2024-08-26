@@ -75,7 +75,7 @@ func (e *Endpoint) getParams(requestPath string) map[string]string {
 	return params
 }
 
-func (e *Endpoint) GenerateResponse(headers map[string]string, params map[string]string) *Response {
+func (e *Endpoint) GenerateResponse(headers map[string]string, params map[string]string, compression compressionMethod) *Response {
 	mergedHeaders := make(map[string]string)
 	maps.Copy(mergedHeaders, e.headers)
 	maps.Copy(mergedHeaders, headers)
@@ -85,6 +85,7 @@ func (e *Endpoint) GenerateResponse(headers map[string]string, params map[string
 	response := e.handler(mergedHeaders, mergedParams)
 	maps.Copy(mergedHeaders, response.headers)
 	response.headers = mergedHeaders
+	response.compression = compression
 
 	return response
 }
