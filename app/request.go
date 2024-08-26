@@ -84,9 +84,9 @@ func (r *Request) fillRequestData() {
 
 	enncodingIndex := r.matchRespectiveHeader(splittedMessage, "Accept-Encoding:")
 	if enncodingIndex >= 0 {
-		encoding := strings.Replace(splittedMessage[enncodingIndex], "Accept-Encoding: ", "", -1)
-		if r.validEncoding(encoding) {
-			r.headers["encoding"] = encoding
+		encodingsString := strings.Replace(splittedMessage[enncodingIndex], "Accept-Encoding: ", "", -1)
+		if r.validEncoding(encodingsString) {
+			r.headers["encodings"] = encodingsString
 		}
 	}
 
@@ -117,13 +117,27 @@ func (r *Request) matchRespectiveHeader(headerSlice []string, header string) int
 	return index
 }
 
-func (r *Request) validEncoding(encoding string) bool {
+func (r *Request) validEncoding(encodings string) bool {
 	validEncodings := []string{"gzip"}
-	return slices.Contains(validEncodings, encoding)
+
+	for _, validEncoding := range validEncodings {
+		if strings.Contains(encodings, validEncoding) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (r *Request) setEncoding() {
-	if r.headers["encoding"] == "gzip" {
-		r.compression = &GzipCompression{}
+	encodings := []string{}
+	if encodingsStr, ok := r.headers["encodings"]; ok {
+		encodings = strings.Split(encodingsStr, ", ")
+	}
+
+	for _, encoding := range encodings {
+		if encoding == "gzip" {
+			r.compression = &GzipCompression{}
+		}
 	}
 }

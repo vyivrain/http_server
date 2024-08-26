@@ -48,3 +48,7 @@ func (gc *GzipCompression) decompress(data []byte) ([]byte, error) {
 
 	return output, nil
 }
+
+func (gc *GzipCompression) name() string {
+	return "gzip"
+}

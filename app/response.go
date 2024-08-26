@@ -27,8 +27,8 @@ func (resp *Response) String() string {
 	)
 
 	additionalHeaders := ""
-	if val, ok := resp.headers["encoding"]; ok {
-		additionalHeaders += "\r\nContent-Encoding: " + val
+	if resp.compression != nil {
+		additionalHeaders += "\r\nContent-Encoding: " + resp.compression.name()
 	}
 
 	responseMessage := ""
