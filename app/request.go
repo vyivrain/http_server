@@ -13,7 +13,6 @@ type Request struct {
 	params           map[string]string
 	body             string
 	unhandledRequest bool
-	compressionObj   compressionMethod
 }
 
 func (r *Request) String() string {
