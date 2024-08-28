@@ -20,26 +20,17 @@ func (resp *Response) String() string {
 		return htmlStatus + "\r\n"
 	}
 
+	responseMessage := resp.generateResponseMessage()
+
 	htmlHeaders := fmt.Sprintf(
 		"Content-Type: %s\r\nContent-Length: %d",
 		resp.headers["contentType"],
-		len(resp.message),
+		len(responseMessage),
 	)
 
 	additionalHeaders := ""
 	if resp.compression != nil {
 		additionalHeaders += "\r\nContent-Encoding: " + resp.compression.name()
-	}
-
-	responseMessage := ""
-	if resp.compression != nil {
-		if compressedData, err := resp.compression.compress([]byte(resp.message)); err == nil {
-			responseMessage = string(compressedData)
-		} else {
-			panic("Can't compress response message")
-		}
-	} else {
-		responseMessage = resp.message
 	}
 
 	return htmlStatus + htmlHeaders + additionalHeaders + "\r\n\r\n" + responseMessage
@@ -63,5 +54,18 @@ func (respError *ResponseError) Error() string {
 		return ""
 	} else {
 		return "Unhandled Error"
+	}
+}
+
+func (resp *Response) generateResponseMessage() string {
+	if resp.compression != nil {
+		if compressedData, err := resp.compression.compress([]byte(resp.message)); err == nil {
+			responseMessage := string(compressedData)
+			return responseMessage
+		} else {
+			panic("Can't compress response message")
+		}
+	} else {
+		return resp.message
 	}
 }

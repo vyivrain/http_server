@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"compress/gzip"
+	"fmt"
 	"io"
 )
 
@@ -25,12 +26,14 @@ func (gc *GzipCompression) dataContainsCompressionMethod(data []byte) bool {
 func (gc *GzipCompression) compress(data []byte) ([]byte, error) {
 	var buf bytes.Buffer
 	gzipWriter := gzip.NewWriter(&buf)
-	defer gzipWriter.Close()
 
 	_, err := gzipWriter.Write(data)
 	if err != nil {
 		return nil, err
 	}
+	gzipWriter.Close()
+
+	fmt.Println(buf.Bytes())
 
 	return buf.Bytes(), nil
 }
