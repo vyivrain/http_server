@@ -9,22 +9,22 @@ import (
 	"time"
 )
 
-const CONN_TIMEOUT time.Duration = 30 * time.Second
-const CONN_CHUNK_SIZE int = 4092
+const connTimeout time.Duration = 30 * time.Second
+const connChunkSize int = 4092
 
 // const READ_TIMEOUT time.Duration = 200 * time.Millisecond
 
 func readConnectionMessage(conn net.Conn) (string, error) {
 	buffer := bytes.NewBuffer(nil)
 	for {
-		chunk := make([]byte, CONN_CHUNK_SIZE)
+		chunk := make([]byte, connChunkSize)
 		read, err := conn.Read(chunk)
 		if err != nil {
 			return "", err
 		}
 		buffer.Write(chunk[:read])
 
-		if read == 0 || read < CONN_CHUNK_SIZE {
+		if read == 0 || read < connChunkSize {
 			break
 		}
 	}
@@ -82,7 +82,7 @@ func main() {
 
 	for {
 		conn, err := l.Accept()
-		conn.SetDeadline(time.Now().Add(CONN_TIMEOUT))
+		conn.SetDeadline(time.Now().Add(connTimeout))
 
 		if err != nil {
 			if opErr, ok := err.(*net.OpError); ok && opErr.Timeout() {
